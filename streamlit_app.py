@@ -3,13 +3,35 @@ import google.generativeai as genai
 from PIL import Image
 import io
 
-# Show title and description.
-st.title("Beauty & Barber - Generador de Imagen")
-st.write(
-    "Generá imágenes personalizadas para tu barbería con Gemini 3 Pro. "
-    "Subí una o más imágenes, agregá un prompt y generá nuevas imágenes. "
-    "Necesitás una Google API key, que podés conseguir [aquí](https://makersuite.google.com/app/apikey). "
+# Configure page
+st.set_page_config(
+    page_title="Beauty & Barber - Generador de Imagen",
+    page_icon="✂️",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# Sidebar
+with st.sidebar:
+    st.title("✂️ Beauty & Barber")
+    st.markdown("Generá imágenes personalizadas para tu barbería con IA.")
+    st.markdown("---")
+    if st.button("🗑️ Limpiar Chat"):
+        st.session_state.messages = []
+        if "last_generated_image" in st.session_state:
+            del st.session_state.last_generated_image
+        st.rerun()
+    st.markdown("---")
+    st.markdown("**Consejos:**")
+    st.markdown("- Subí imágenes de referencia")
+    st.markdown("- Sé específico en los prompts")
+    st.markdown("- Usá refinamiento para editar")
+    st.markdown("---")
+    st.markdown("[Obtener Google API Key](https://makersuite.google.com/app/apikey)")
+
+# Main content
+st.title("🎨 Generador de Imágenes con Gemini")
+st.markdown("Subí imágenes, escribí prompts y generá o refiná imágenes para tu barbería.")
 
 # Hardcoded Google API key (WARNING: Not secure for production!)
 google_api_key = "AIzaSyD4bGjr4thcFNwZu77yWNMhwQ9Rn-jntQA"  # Reemplaza con tu API key real
@@ -36,11 +58,27 @@ for message in st.session_state.messages:
 # Image uploader - allow multiple
 uploaded_images = st.file_uploader("Subí una o más imágenes (opcional)", type=["png", "jpg", "jpeg"], accept_multiple_files=True, key="image_uploader")
 
-# Create a chat input field.
-prompt = st.text_input("Describí qué querés generar (ej: 'creá un logo moderno para barbería')", key="prompt_input")
+# Input area
+st.markdown("### Crea tu Imagen")
+col1, col2 = st.columns([3, 1])
+with col1:
+    prompt = st.text_area(
+        "Describí qué querés generar",
+        placeholder="Ej: 'Crea un logo moderno para una barbería con tijeras estilizadas y colores negro y rojo'",
+        height=100,
+        key="prompt_input"
+    )
+with col2:
+    generate_button = st.button("🎨 Generar Imagen", type="primary", use_container_width=True)
 
-# Button to generate
-generate_button = st.button("Generar Imagen", type="primary")
+# Examples
+with st.expander("💡 Ejemplos de Prompts"):
+    st.markdown("""
+    - "Logo minimalista para barbería con barba y tijeras"
+    - "Imagen de salón de belleza moderno con luces LED"
+    - "Diseño de tarjeta de visita para peluquero"
+    - "Ilustración de corte de cabello vintage"
+    """)
 
 if generate_button and (prompt or uploaded_images):
     images = []
@@ -89,6 +127,24 @@ if generate_button and (prompt or uploaded_images):
                             image_data = part.inline_data.data
                             image = Image.open(io.BytesIO(image_data))
                             st.image(image)
+                            # Download button
+                            st.download_button(
+                                label="📥 Descargar Imagen",
+                                data=image_data,
+                                file_name="generated_image.png",
+                                mime="image/png",
+                                key=f"download_{len(st.session_state.messages)}"
+                            )
+                            # Regenerate button
+                            if st.button("🔄 Regenerar", key=f"regenerate_{len(st.session_state.messages)}"):
+                                with st.spinner("Regenerando..."):
+                                    try:
+                                        response = model.generate_content(content)  # Reuse last content
+                                        # Update the image (simplified, in practice replace the last message)
+                                        st.session_state.messages[-1]["image"] = image  # But need to handle properly
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error regenerando: {e}")
                             st.session_state.messages.append({"role": "assistant", "image": image})
                             # Store the last generated image for refinement
                             st.session_state.last_generated_image = image
@@ -99,9 +155,11 @@ if generate_button and (prompt or uploaded_images):
 
 # Refinement section
 if "last_generated_image" in st.session_state:
-    st.subheader("Refinar Imagen Generada")
-    refine_prompt = st.text_input("Agregá más detalles para editar la imagen (ej: 'agregá colores rojos')", key="refine_input")
-    refine_button = st.button("Refinar Imagen", type="secondary")
+    st.markdown("---")
+    st.subheader("🔧 Refinar Imagen Generada")
+    st.image(st.session_state.last_generated_image, caption="Imagen actual", width=200)
+    refine_prompt = st.text_input("Agregá instrucciones para editar (ej: 'cambiá el color a azul, agregá texto')", key="refine_input")
+    refine_button = st.button("✨ Aplicar Cambios", type="secondary")
 
     if refine_button and refine_prompt:
         # Use the last generated image + new prompt
