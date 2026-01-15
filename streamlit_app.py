@@ -4,7 +4,7 @@ from PIL import Image
 import io
 
 # Show title and description.
-st.title("💬 Chatbot con Gemini")
+st.title("Beauty & Barber - Generador de Imagen")
 st.write(
     "Este es un chatbot simple que usa Gemini 1.5 Pro para generar respuestas, incluyendo soporte para imágenes. "
     "Necesitás una Google API key, que podés conseguir [aquí](https://makersuite.google.com/app/apikey). "
