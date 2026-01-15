@@ -113,9 +113,7 @@ if generate_button and (prompt or uploaded_images):
                 content.append(enhanced_prompt)
             for img in images:
                 content.append(img)
-            # For image generation, use config with aspect_ratio
-            config = genai.GenerateContentConfig(aspect_ratio="1:1")
-            response = model.generate_content(content, config=config)
+            response = model.generate_content(content)
 
             # Display and store new response
             with st.chat_message("assistant"):
@@ -157,8 +155,7 @@ if "last_generated_image" in st.session_state:
             try:
                 enhanced_refine_prompt = f"{refine_prompt}. High resolution, 1024x1024, detailed, professional quality."
                 content = [enhanced_refine_prompt, st.session_state.last_generated_image]
-                config = genai.GenerateContentConfig(aspect_ratio="1:1")
-                response = model.generate_content(content, config=config)
+                response = model.generate_content(content)
 
                 # Display and store new response
                 with st.chat_message("assistant"):
