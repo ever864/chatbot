@@ -126,6 +126,14 @@ if generate_button and (prompt or uploaded_images):
                             # It's an image
                             image_data = part.inline_data.data
                             image = Image.open(io.BytesIO(image_data))
+                            # Resize to max 1024x1024 if larger
+                            max_size = 1024
+                            if image.width > max_size or image.height > max_size:
+                                image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                                # Convert back to bytes
+                                img_byte_arr = io.BytesIO()
+                                image.save(img_byte_arr, format='PNG')
+                                image_data = img_byte_arr.getvalue()
                             st.image(image)
                             # Download button
                             st.download_button(
@@ -140,8 +148,7 @@ if generate_button and (prompt or uploaded_images):
                                 with st.spinner("Regenerando..."):
                                     try:
                                         response = model.generate_content(content)  # Reuse last content
-                                        # Update the image (simplified, in practice replace the last message)
-                                        st.session_state.messages[-1]["image"] = image  # But need to handle properly
+                                        # For simplicity, rerun the page
                                         st.rerun()
                                     except Exception as e:
                                         st.error(f"Error regenerando: {e}")
@@ -178,7 +185,22 @@ if "last_generated_image" in st.session_state:
                             elif part.inline_data:
                                 image_data = part.inline_data.data
                                 image = Image.open(io.BytesIO(image_data))
+                                # Resize to max 1024x1024 if larger
+                                max_size = 1024
+                                if image.width > max_size or image.height > max_size:
+                                    image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                                    # Convert back to bytes
+                                    img_byte_arr = io.BytesIO()
+                                    image.save(img_byte_arr, format='PNG')
+                                    image_data = img_byte_arr.getvalue()
                                 st.image(image)
+                                st.download_button(
+                                    label="📥 Descargar Imagen",
+                                    data=image_data,
+                                    file_name="refined_image.png",
+                                    mime="image/png",
+                                    key=f"download_refine_{len(st.session_state.messages)}"
+                                )
                                 st.session_state.messages.append({"role": "assistant", "image": image})
                                 # Update last generated
                                 st.session_state.last_generated_image = image
