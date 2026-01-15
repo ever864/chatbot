@@ -33,8 +33,8 @@ with st.sidebar:
 st.title("🎨 Generador de Imágenes con Gemini")
 st.markdown("Subí imágenes, escribí prompts y generá o refiná imágenes para tu barbería.")
 
-# Hardcoded Google API key (WARNING: Not secure for production!)
-google_api_key = "AIzaSyD4bGjr4thcFNwZu77yWNMhwQ9Rn-jntQA"  # Reemplaza con tu API key real
+# Get Google API key from secrets (secure way)
+google_api_key = st.secrets["GOOGLE_API_KEY"]
 
 # Configure Gemini
 genai.configure(api_key=google_api_key)
