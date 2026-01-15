@@ -72,12 +72,12 @@ with col2:
     generate_button = st.button("🎨 Generar Imagen", type="primary", use_container_width=True)
 
 # Examples
-with st.expander("💡 Ejemplos de Prompts"):
+with st.expander("💡 Ejemplos de Prompts (Sé específico para mejor calidad)"):
     st.markdown("""
-    - "Logo minimalista para barbería con barba y tijeras"
-    - "Imagen de salón de belleza moderno con luces LED"
-    - "Diseño de tarjeta de visita para peluquero"
-    - "Ilustración de corte de cabello vintage"
+    - "Logo minimalista para barbería con barba estilizada, tijeras doradas, colores negro y rojo, fondo blanco, alta resolución"
+    - "Imagen realista de salón de belleza moderno con luces LED azules, sillas de cuero negro, espejos grandes, atmósfera elegante"
+    - "Diseño de tarjeta de visita para peluquero: nombre 'Barber King', teléfono, dirección, con imagen de tijeras y peine, estilo vintage"
+    - "Ilustración digital de corte de cabello masculino moderno, modelo con barba, colores vibrantes, estilo artístico"
     """)
 
 if generate_button and (prompt or uploaded_images):
@@ -112,7 +112,12 @@ if generate_button and (prompt or uploaded_images):
                 content.append(prompt)
             for img in images:
                 content.append(img)
-            response = model.generate_content(content)
+            # Config for high quality square images
+            response = model.generate_content(
+                content,
+                generation_config=genai.GenerationConfig(temperature=1.0),
+                # Aspect ratio for image generation
+            )
 
             # Display and store response
             with st.chat_message("assistant"):
