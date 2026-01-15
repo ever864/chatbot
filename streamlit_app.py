@@ -90,7 +90,41 @@ if generate_button and (prompt or uploaded_images):
                             image = Image.open(io.BytesIO(image_data))
                             st.image(image)
                             st.session_state.messages.append({"role": "assistant", "image": image})
+                            # Store the last generated image for refinement
+                            st.session_state.last_generated_image = image
                 except Exception as e:
                     st.error(f"Error procesando respuesta: {e}")
         except Exception as e:
             st.error(f"Error: {e}")
+
+# Refinement section
+if "last_generated_image" in st.session_state:
+    st.subheader("Refinar Imagen Generada")
+    refine_prompt = st.text_input("Agregá más detalles para editar la imagen (ej: 'agregá colores rojos')", key="refine_input")
+    refine_button = st.button("Refinar Imagen", type="secondary")
+
+    if refine_button and refine_prompt:
+        # Use the last generated image + new prompt
+        with st.spinner("Refinando imagen... Esperá un momento"):
+            try:
+                content = [refine_prompt, st.session_state.last_generated_image]
+                response = model.generate_content(content)
+
+                # Display and store new response
+                with st.chat_message("assistant"):
+                    try:
+                        for part in response.candidates[0].content.parts:
+                            if part.text:
+                                st.markdown(part.text)
+                                st.session_state.messages.append({"role": "assistant", "text": part.text})
+                            elif part.inline_data:
+                                image_data = part.inline_data.data
+                                image = Image.open(io.BytesIO(image_data))
+                                st.image(image)
+                                st.session_state.messages.append({"role": "assistant", "image": image})
+                                # Update last generated
+                                st.session_state.last_generated_image = image
+                    except Exception as e:
+                        st.error(f"Error procesando respuesta: {e}")
+            except Exception as e:
+                st.error(f"Error: {e}")
