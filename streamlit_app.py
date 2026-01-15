@@ -1,6 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-from google.generativeai import types
 from PIL import Image
 import io
 
@@ -115,7 +114,7 @@ if generate_button and (prompt or uploaded_images):
             for img in images:
                 content.append(img)
             # For image generation, use config with aspect_ratio
-            config = types.GenerateContentConfig(aspect_ratio="1:1")
+            config = genai.GenerateContentConfig(aspect_ratio="1:1")
             response = model.generate_content(content, config=config)
 
             # Display and store new response
@@ -143,3 +142,46 @@ if generate_button and (prompt or uploaded_images):
                     st.error(f"Error procesando respuesta: {e}")
         except Exception as e:
             st.error(f"Error: {e}")
+
+# Refinement section
+if "last_generated_image" in st.session_state:
+    st.markdown("---")
+    st.subheader("🔧 Refinar Imagen Generada")
+    st.image(st.session_state.last_generated_image, caption="Imagen actual", width=200)
+    refine_prompt = st.text_input("Agregá instrucciones para editar (ej: 'cambiá el color a azul, agregá texto')", key="refine_input")
+    refine_button = st.button("✨ Aplicar Cambios", type="secondary")
+
+    if refine_button and refine_prompt:
+        # Use the last generated image + new prompt
+        with st.spinner("Refinando imagen... Esperá un momento"):
+            try:
+                enhanced_refine_prompt = f"{refine_prompt}. High resolution, 1024x1024, detailed, professional quality."
+                content = [enhanced_refine_prompt, st.session_state.last_generated_image]
+                config = genai.GenerateContentConfig(aspect_ratio="1:1")
+                response = model.generate_content(content, config=config)
+
+                # Display and store new response
+                with st.chat_message("assistant"):
+                    try:
+                        for part in response.candidates[0].content.parts:
+                            if part.text:
+                                st.markdown(part.text)
+                                st.session_state.messages.append({"role": "assistant", "text": part.text})
+                            elif part.inline_data:
+                                image_data = part.inline_data.data
+                                image = Image.open(io.BytesIO(image_data))
+                                st.image(image)
+                                st.download_button(
+                                    label="📥 Descargar Imagen",
+                                    data=image_data,
+                                    file_name="refined_image.png",
+                                    mime="image/png",
+                                    key=f"download_refine_{len(st.session_state.messages)}"
+                                )
+                                st.session_state.messages.append({"role": "assistant", "image": image})
+                                # Update last generated
+                                st.session_state.last_generated_image = image
+                    except Exception as e:
+                        st.error(f"Error procesando respuesta: {e}")
+            except Exception as e:
+                st.error(f"Error: {e}")
